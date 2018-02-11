@@ -1,5 +1,7 @@
 package com.viorsan.resultanttestdkzm.view.main
 
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.support.design.widget.Snackbar
 import android.support.design.widget.NavigationView
@@ -9,6 +11,7 @@ import android.support.v7.widget.LinearLayoutManager
 import android.view.Menu
 import android.view.MenuItem
 import com.github.salomonbrys.kodein.instance
+import com.viorsan.resultanttestdkzm.Constants
 import com.viorsan.resultanttestdkzm.view.common.BaseActivity
 import com.viorsan.resultanttestdkzm.Interfaces.CreatorInterface
 import com.viorsan.resultanttestdkzm.R
@@ -17,6 +20,9 @@ import com.viorsan.resultanttestdkzm.model.CurrencyItem
 import com.viorsan.resultanttestdkzm.presenter.MainPresenter
 import com.viorsan.resultanttestdkzm.view.common.BaseActivityWithPresenter
 import com.viorsan.resultanttestdkzm.view.common.bindToSwipeRefresh
+import io.reactivex.Observable
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.rxkotlin.plusAssign
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
 import kotlinx.android.synthetic.main.main_activity_list.*
@@ -24,6 +30,10 @@ import net.intari.AndroidToolboxCore.Extensions.logException
 import net.intari.AndroidToolboxCore.Extensions.logThrowable
 import net.intari.AndroidToolboxCore.Extensions.logger
 import org.jetbrains.anko.toast
+import java.util.concurrent.TimeUnit
+import javax.xml.datatype.DatatypeConstants.SECONDS
+
+
 
 class MainActivity : BaseActivityWithPresenter(), MainView, NavigationView.OnNavigationItemSelectedListener {
 
@@ -34,7 +44,7 @@ class MainActivity : BaseActivityWithPresenter(), MainView, NavigationView.OnNav
 
     override val presenter by lazy { MainPresenter(this,  mainRepository) }
 
-    private val currencyItems = listOf<CurrencyItem>(CurrencyItem("PHP",1200,1.35f))
+    protected var subscriptions = CompositeDisposable()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         //launch screen is done using https://habrahabr.ru/post/345380/
@@ -42,14 +52,6 @@ class MainActivity : BaseActivityWithPresenter(), MainView, NavigationView.OnNav
         setTheme(R.style.AppTheme)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        /*
-        setSupportActionBar(toolbar)
-
-        fab.setOnClickListener { view ->
-            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                    .setAction("Action", null).show()
-        }
-         */
 
         //Activate swipe-to-refresh
         swipeRefreshView.setOnRefreshListener {
@@ -96,8 +98,8 @@ class MainActivity : BaseActivityWithPresenter(), MainView, NavigationView.OnNav
     }
 
     override fun onBackPressed() {
-        if (drawer_layout.isDrawerOpen(GravityCompat.START)) {
-            drawer_layout.closeDrawer(GravityCompat.START)
+        if (drawer_layout.isDrawerOpen(GravityCompat.END)) {
+            drawer_layout.closeDrawer(GravityCompat.END)
         } else {
             super.onBackPressed()
         }
@@ -115,6 +117,10 @@ class MainActivity : BaseActivityWithPresenter(), MainView, NavigationView.OnNav
         // as you specify a parent activity in AndroidManifest.xml.
         when (item.itemId) {
             R.id.action_settings -> return true
+            R.id.action_about -> {
+                launchAboutUs()
+                return true
+            }
             else -> return super.onOptionsItemSelected(item)
         }
     }
@@ -122,27 +128,14 @@ class MainActivity : BaseActivityWithPresenter(), MainView, NavigationView.OnNav
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         // Handle navigation view item clicks here.
         when (item.itemId) {
-            R.id.nav_camera -> {
-                // Handle the camera action
+            R.id.nav_refresh -> {
+                //handle refresh
+                presenter.onRefresh()
             }
-            R.id.nav_gallery -> {
 
-            }
-            R.id.nav_slideshow -> {
-
-            }
-            R.id.nav_manage -> {
-
-            }
-            R.id.nav_share -> {
-
-            }
-            R.id.nav_send -> {
-
-            }
         }
 
-        drawer_layout.closeDrawer(GravityCompat.START)
+        drawer_layout.closeDrawer(GravityCompat.END)
         return true
     }
 
@@ -155,8 +148,22 @@ class MainActivity : BaseActivityWithPresenter(), MainView, NavigationView.OnNav
 
     }
 
-    companion object {
+    override  fun onResume() {
+        super.onResume()
+        //activate automatic refresh
+        Observable
+                .interval(Constants.AUTOREFRESH_INTERVAL, TimeUnit.SECONDS)
+                .doOnNext { presenter.onRefresh()}
+
+    }
+    companion object:CreatorInterface {
         val logger = logger<MainActivity>()
+        override fun getIntent(context: Context): Intent {
+            return  Intent(context, MainActivity::class.java)
+        }
+        override fun creator(): CreatorInterface {
+            return this
+        }
     }
 
 }

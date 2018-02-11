@@ -10,6 +10,7 @@ import com.viorsan.resultanttestdkzm.Constants.*
 import com.viorsan.resultanttestdkzm.Interfaces.CreatorInterface
 import com.viorsan.resultanttestdkzm.data.MainRepository
 import com.viorsan.resultanttestdkzm.data.MainRepositoryImpl
+import com.viorsan.resultanttestdkzm.view.main.MainActivity
 import net.intari.AndroidToolboxCore.Extensions.logger
 import java.util.*
 
@@ -20,17 +21,17 @@ import java.util.*
 // No need to inherit from Multidex app yet
 class MyApp : Application(), KodeinAware {
 
-    //Init Kodein, will be used instead of Dagger 2
-    //It's possible that in future some of constants will be user-configurable at least via config file/preferences
+    //Init Kodein
     override val kodein by Kodein.lazy {
         /* bindings */
         import(androidModule)
 
         // Make it possible to replace AboutUs Activity (or other activities in ufutre
         bind<CreatorInterface>("AboutUsActivity") with singleton { AboutUsActivity.creator() }
+        bind<CreatorInterface>("MainActivity") with singleton { MainActivity.creator() }
         constant("SERVER") with SERVER
         bind<Context>("AppContext") with singleton { applicationContext }
-        bind<MainRepository>("MainRepository") with provider { MainRepositoryImpl() }
+        bind<MainRepository>("MainRepository") with provider { MainRepositoryImpl() } //real network repository
     }
 
 
@@ -40,7 +41,7 @@ class MyApp : Application(), KodeinAware {
 
 
     protected fun initCrashHandler() {
-        //init error handler
+        //if it was real app, I would inited crashlytcis here
         //Must be first line before we use logger and error handler.
         //Fabric.with(this, new Crashlytics());
     }
@@ -74,7 +75,7 @@ class MyApp : Application(), KodeinAware {
                 BuildConfig.VERSION_CODE,
                 BuildConfig.BUILD_DATE_TIME
         ) }
-        //TODO:update crashlytics tags - language/locale,etc
+
     }
 
     /**
@@ -96,9 +97,6 @@ class MyApp : Application(), KodeinAware {
         initCrashHandler()
         initLogging()
 
-
-        //init contexts
-        //AppSingletons.appContextDelegate.writeOnce(applicationContext)
 
         //init rxjava2debug, must be done after crash-reporter is ready
         initRxJava2Debug()

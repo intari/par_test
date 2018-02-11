@@ -23,4 +23,7 @@ public class Constants {
 
     public static final long READ_TIMEOUT=60;
 
+    public static final long MIN_SPLASH_DELAY=5;//minimal time to show splash
+    public static final long AUTOREFRESH_INTERVAL=15;//autorefresh interval 15 seconds
+
 }
