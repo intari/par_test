@@ -10,6 +10,8 @@ import kotlinx.android.synthetic.main.activity_about_us.*
 class AboutUsActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        //restore theme
+        setTheme(R.style.AppTheme)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_about_us)
         //Configure initial value for 'appVersion'. Kotlin support rulez!
