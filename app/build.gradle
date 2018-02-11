@@ -1,0 +1,176 @@
+import java.text.SimpleDateFormat
+
+/**
+ * Get SHA1 hash of head revision whch we build
+ * @return hash of head
+ */
+def gitSha() {
+    def res = 'git rev-parse HEAD'.execute([], project.rootDir).text.trim()
+
+    //ignore extra files if it's Jenkinks
+    if (System.getenv('RUNNING_UNDER_INTERNAL_JENKINS') != 'YES') {
+        def diff = 'git diff'.execute([], project.rootDir).text.trim()
+        if (diff != null && diff.length() > 0) {
+            res += "-dirty"
+        }
+    }
+
+    return res
+}
+/**
+ * Get short version of last commit message
+ * @return short version of last commit message
+ */
+def gitLastCommit() {
+    return 'git log -1 --no-merges --pretty=oneline --abbrev-commit'.execute().text.trim()
+}
+/**
+ * Get build time in short form
+ * Timezone - local (uncomment setTimezone if UTC is needed)
+ * @return build time in short form
+ */
+def buildTime() {
+    def df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")
+    //df.setTimeZone(TimeZone.getTimeZone("UTC"))
+    //RTZ5 (Omsk) is UTC+6 per https://ru.wikipedia.org/wiki/Время_в_России
+    return df.format(new Date())
+}
+
+/**
+ * Get more readable form of build time like 2014/12/31 23:59 OMST
+ * Timezone - local (uncomment setTimezone if UTC is needed)
+ * @return time of build in more human-readable form
+ */
+def buildTimeHumanReadable() {
+    def df = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss z")
+    //df.setTimeZone(TimeZone.getTimeZone("UTC"))
+    //RTZ5 (Omsk) is UTC+6 per https://ru.wikipedia.org/wiki/Время_в_России
+    return df.format(new Date())
+}
+/**
+ * get hostname on whichbuild was run
+ * @return builder's hostname
+ */
+def getHostname() {
+    return 'hostname'.execute().text.trim()
+}
+/**
+ * user name used for build
+ * @return user login used for build (could help if local build)
+ */
+def getUsername() {
+    return System.getProperty("user.name")
+}
+
+
+apply plugin: 'com.android.application'
+
+apply plugin: 'kotlin-android'
+
+apply plugin: 'kotlin-android-extensions'
+
+kotlin {
+    experimental {
+        coroutines 'enable'
+    }
+}
+
+//Auto-parcelizer, https://blog.jetbrains.com/kotlin/2017/08/kotlin-1-1-4-is-out/
+androidExtensions {
+    experimental = true
+}
+
+android {
+    compileSdkVersion 26
+
+    //Java 8 (lambdas,etc) for Java parts we will use (if any)
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    defaultConfig {
+        applicationId "com.viorsan.resultanttestdkzm"
+        minSdkVersion 15
+        targetSdkVersion 26
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+
+        buildConfigField "String", "BUILD_GIT_SHA1", "\"" + gitSha() + "\""
+        // Make git version hash available for app for use in about box,etc/error logging
+        buildConfigField "String", "BUILD_HOST", "\"" + getHostname() + "\""
+        buildConfigField "String", "BUILD_USER", "\"" + getUsername() + "\""
+
+        //Making build date time available for app for use in about box/error logging
+        buildConfigField "String", "BUILD_DATE_TIME", "\"" + buildTimeHumanReadable() + "\""
+        buildConfigField "String", "BUILD_DATE_TIME_SHORT_FORM", "\"" + buildTime() + "\""
+
+    }
+
+
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
+
+    //Android support
+    implementation(["com.android.support:support-v4:$android_support_version",
+                    "com.android.support:appcompat-v7:$android_support_version",
+                    "com.android.support:design:$android_support_version",
+                    "com.android.support:percent:$android_support_version",
+                    "com.android.support:recyclerview-v7:$android_support_version",
+                    //"com.android.support:support-vector-drawable:$android_support_version"
+    ])
+
+    implementation 'com.android.support.constraint:constraint-layout:1.0.2'
+
+    implementation 'com.google.code.gson:gson:2.6.1'
+
+    // Retrofit
+    implementation(["com.squareup.okhttp3:okhttp:$retrofit_version",
+                    "com.squareup.retrofit2:adapter-rxjava2:$retrofit_version",
+                    "com.squareup.retrofit2:converter-gson:$retrofit_version",
+                    "com.squareup.okhttp3:logging-interceptor:$okhttp_version"
+    ])
+
+    // RxJava
+    implementation "io.reactivex.rxjava2:rxjava:$rxjava_version"
+    // RxAndroid
+    implementation "io.reactivex.rxjava2:rxandroid:$rxandroid_version"
+    // RxKotlin
+    implementation "io.reactivex.rxjava2:rxkotlin:$rxkotlin_version"
+
+    //Helper tool to debug RxJava stacks
+    implementation 'com.akaita.java:rxjava2-debug:1.2.0'
+
+    // Kotlin Coroutines
+    implementation(["org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlin_coroutines_version",
+                    "org.jetbrains.kotlinx:kotlinx-coroutines-android:$kotlin_coroutines_version",
+                    "org.jetbrains.kotlinx:kotlinx-coroutines-reactive:$kotlin_coroutines_version"
+
+    ])
+
+    //Helper Kotlin/Java tools
+    implementation 'net.intari:AndroidToolboxCore:0.0.33'
+    implementation 'net.intari:CustomLogger:1.0.13' //CustomLog
+
+    //Kodein (dependency injection)
+    implementation 'com.github.salomonbrys.kodein:kodein:4.1.0'
+    implementation 'com.github.salomonbrys.kodein:kodein-android:4.1.0'
+
+    // Anko Commons
+    compile "org.jetbrains.anko:anko-commons:$anko_version"
+
+
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'com.android.support.test:runner:1.0.1'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
+}
