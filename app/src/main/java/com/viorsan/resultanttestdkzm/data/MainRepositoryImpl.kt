@@ -15,39 +15,11 @@ class MainRepositoryImpl: MainRepository {
     //our API instance
     val api = retrofit.create(ServerAPI::class.java)
 
-    /*
-    fun getStocks2(): Single<List<CurrencyItem>> = api.getStocks()
-            .map {
-                logger.info { "asof:${it.data?.results?.as_of}.data:${it.data}, stock:${it.data?.results?.stock}" }
-                it.data?.results?.stock.orEmpty().map ( ::CurrencyItem )
-        }
-        */
     override fun getStocks(): Single<List<CurrencyItem>> = api.getStocks()
             .map {
                 logger.info { "asof:${it.as_of}., stock:${it.stock}" }
                 it.stock.orEmpty().map ( ::CurrencyItem )
             }
-
-    /*
-    override fun getStocks2(): Single<List<CurrencyItem>> {
-        val stocks=api.getStocks()
-        logger.info { "Stocks:${stocks}"}
-        try {
-            val rr= stocks.blockingGet()
-            logger.info { rr.toString() }
-
-        } catch (t:Throwable) {
-            logger.logThrowable(t)
-        }
-        stocks.map {
-            logger.info { "it:${it}" }
-        }
-
-        return getStocks()
-    }
-    */
-
-
 
     companion object {
 
