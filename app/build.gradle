@@ -75,19 +75,10 @@ kotlin {
     }
 }
 
-//Auto-parcelizer, https://blog.jetbrains.com/kotlin/2017/08/kotlin-1-1-4-is-out/
-androidExtensions {
-    experimental = true
-}
 
 android {
     compileSdkVersion 26
 
-    //Java 8 (lambdas,etc) for Java parts we will use (if any)
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-    }
     defaultConfig {
         applicationId "com.viorsan.resultanttestdkzm"
         minSdkVersion 15
