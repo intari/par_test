@@ -21,8 +21,10 @@ import com.viorsan.resultanttestdkzm.presenter.MainPresenter
 import com.viorsan.resultanttestdkzm.view.common.BaseActivityWithPresenter
 import com.viorsan.resultanttestdkzm.view.common.bindToSwipeRefresh
 import io.reactivex.Observable
+import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxkotlin.plusAssign
+import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
 import kotlinx.android.synthetic.main.main_activity_list.*
@@ -45,6 +47,7 @@ class MainActivity : BaseActivityWithPresenter(), MainView, NavigationView.OnNav
     override val presenter by lazy { MainPresenter(this,  mainRepository) }
 
     protected var subscriptions = CompositeDisposable()
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         //launch screen is done using https://habrahabr.ru/post/345380/
@@ -151,9 +154,19 @@ class MainActivity : BaseActivityWithPresenter(), MainView, NavigationView.OnNav
     override  fun onResume() {
         super.onResume()
         //activate automatic refresh
+        startAutoRefresh()
+
+    }
+    /**
+     * Automatic refresh
+     *
+     */
+    private fun startAutoRefresh() {
         Observable
-                .interval(Constants.AUTOREFRESH_INTERVAL, TimeUnit.SECONDS)
-                .doOnNext { presenter.onRefresh()}
+                .interval(Constants.AUTOREFRESH_INTERVAL,Constants.AUTOREFRESH_INTERVAL,TimeUnit.SECONDS,AndroidSchedulers.mainThread())
+                .doOnNext {  presenter.onRefresh() }
+                .subscribe()
+
 
     }
     companion object:CreatorInterface {
