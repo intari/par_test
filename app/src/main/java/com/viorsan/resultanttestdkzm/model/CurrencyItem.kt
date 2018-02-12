@@ -5,7 +5,7 @@ import com.viorsan.resultanttestdkzm.data.network.dto.StockDto
  * Created by Dmitriy Kazimirov, e-mail:dmitriy.kazimirov@viorsan.com on 11.02.2018.
  */
 
-class CurrencyItem(val name:String, val volume:Long, val amount:Float){
+class CurrencyItem(val name:String, val price:Long, val amount:Float){
 
     /**
      * Construct CurrencyItem from DTO
@@ -13,9 +13,9 @@ class CurrencyItem(val name:String, val volume:Long, val amount:Float){
      * This is very strange and questions should be asked if this is REALLY thing customer needed
      */
     constructor(stockDto: StockDto): this (
-            name = stockDto.price.currency,
+            name = stockDto.name,
             amount = stockDto.price.amount,
-            volume = stockDto.volume
+            price = stockDto.volume
     )
 
 }

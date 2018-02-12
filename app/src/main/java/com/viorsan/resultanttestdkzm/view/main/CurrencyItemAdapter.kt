@@ -29,7 +29,7 @@ class CurrencyItemAdapter(val currencyItem: CurrencyItem):
          */
         currencyNameTextView.text = currencyItem.name
         currencyAmountTextView.text = "%.2f".format(currencyItem.amount) // it was requested that amount will have 2 decimal symbols
-        currencyPriceTextView.text=currencyItem.volume.toString()
+        currencyPriceTextView.text=currencyItem.price.toString()
         //TODO:add click listeners, image loading etc here if needed in future
     }
 
