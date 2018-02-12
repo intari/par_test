@@ -10,6 +10,7 @@ import org.jetbrains.anko.doAsync
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import android.R.attr.delay
+import com.viorsan.resultanttestdkzm.data.applySchedulers
 import io.reactivex.Observable
 import net.intari.AndroidToolboxCore.Extensions.logger
 import java.util.concurrent.TimeUnit
@@ -38,6 +39,7 @@ class SecondarySplashActivitiy : BaseActivity() {
         //wait specified time, Rx way.
         //alternative is Handler().postDelayed(new Runnable.... )
         Observable.just(true).delay(Constants.MIN_SPLASH_DELAY, TimeUnit.MILLISECONDS)
+                .applySchedulers()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .doOnNext {  launchMainActivity() }

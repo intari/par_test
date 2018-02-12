@@ -1,6 +1,7 @@
 package com.viorsan.resultanttestdkzm.presenter
 
 import com.viorsan.resultanttestdkzm.data.MainRepository
+import com.viorsan.resultanttestdkzm.data.applySchedulers
 import com.viorsan.resultanttestdkzm.view.main.MainView
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.plusAssign
@@ -21,8 +22,7 @@ class MainPresenter(val view: MainView, val repository: MainRepository):BasePres
     private fun loadStocks() {
         //add subscription to ours and load stocks
         subscriptions += repository.getStocks()
-                .subscribeOn(Schedulers.io()) // call network on io
-                .observeOn(AndroidSchedulers.mainThread()) // observe (and call lambda on main
+                .applySchedulers()
                 .doOnSubscribe { view.refresh = true } //so we can have 'updating' animations
                 .doFinally { view.refresh = false}
                 .subscribeBy(
