@@ -45,8 +45,7 @@ before_install:
   - sdkmanager --list || true
   
 script:
-    - ./gradlew clean install
-    - ./gradlew test
+    - ./gradlew clean build
     
 #after_success:
 #  - bash <(curl -s https://codecov.io/bash)
