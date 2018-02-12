@@ -26,6 +26,8 @@ class MainPresenterTest {
         assertOnAction { onViewCreated() }
                 .thereIsSameListDisplayed()
     }
+    
+    @Test
     fun `New list is shown after view was refreshed`() {
         assertOnAction { onRefresh() }
                 .thereIsSameListDisplayed()
