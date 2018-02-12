@@ -1,12 +1,19 @@
 package com.viorsan.resultanttestdkzm
 
 import com.viorsan.resultanttestdkzm.data.MainRepository
+import com.viorsan.resultanttestdkzm.helpers.BaseMainView
+import com.viorsan.resultanttestdkzm.helpers.BaseRepository
+import com.viorsan.resultanttestdkzm.helpers.Example
 import com.viorsan.resultanttestdkzm.model.CurrencyItem
 import com.viorsan.resultanttestdkzm.presenter.MainPresenter
 import com.viorsan.resultanttestdkzm.view.main.MainView
 import io.reactivex.Single
+import io.reactivex.android.plugins.RxAndroidPlugins
+import io.reactivex.plugins.RxJavaPlugins
+import io.reactivex.schedulers.Schedulers
 import org.junit.Assert.assertEquals
 import org.junit.Assert.fail
+import org.junit.Before
 import org.junit.Test
 
 /**
@@ -16,8 +23,27 @@ import org.junit.Test
 @Suppress("IllegalIdentifier") //allow 'fancy' test names
 class MainPresenterTest {
 
+    /*
+      We using at least AndroidSchedulers from rx on network mock test
+      Not a good idea:
+      - Sync issues in tests
+      - http://tools.android.com/tech-docs/unit-testing-support#TOC-Method-...-not-mocked.- due to inability to init AndroidSchedulers
+      We need to modify configuration of schedulers
+     */
+    @Before
+    fun setUp() {
+        //just use scheduler which works sequentially on current thread for android main thread scheduler
+        RxAndroidPlugins.setInitMainThreadSchedulerHandler { Schedulers.trampoline() }
+        // set same for Rx's 'IO' scheduler
+        RxJavaPlugins.setIoSchedulerHandler { Schedulers.trampoline() }
+        // ..and Rx's computation one
+        RxJavaPlugins.setComputationSchedulerHandler { Schedulers.trampoline() }
+        // ..and even basic newThread one
+        RxJavaPlugins.setNewThreadSchedulerHandler { Schedulers.trampoline() }
+    }
+
     @Test
-    fun `Интересное имя теста`() {
+    fun `И такое имя теста тоже можно`() {
 
     }
 
@@ -26,9 +52,9 @@ class MainPresenterTest {
         assertOnAction { onViewCreated() }
                 .thereIsSameListDisplayed()
     }
-    
+
     @Test
-    fun `New list is shown after view was refreshed`() {
+    fun `List is shown after view was refreshed`() {
         assertOnAction { onRefresh() }
                 .thereIsSameListDisplayed()
     }
@@ -46,21 +72,13 @@ class MainPresenterTest {
             var displayedList : List<CurrencyItem>? = null
 
             //fake main view
-            val view = object : MainView {
-                override var refresh: Boolean = false
-                override fun show(items: List<CurrencyItem>) {
-                    displayedList = items
-                }
-
-                override fun showError(error: Throwable) {
-                    fail()
-                }
-            }
+            val view = BaseMainView(onShow = {
+                items -> displayedList=items},
+                    onShowError = { fail()}
+            )
 
             //fake main repository, returns example list
-            val mainRepository = object : MainRepository {
-                override fun getStocks(): Single<List<CurrencyItem>> = Single.just(exampleList)
-            }
+            val mainRepository = BaseRepository( onGetItems = { Single.just(Example.exampleItemList)})
 
             val mainPresenter = MainPresenter(view,mainRepository)
 
@@ -68,7 +86,7 @@ class MainPresenterTest {
             mainPresenter.actionOnPresenter()
 
             //result is list example list == displayed list (so it was correctly passed to main view)
-            assertEquals(exampleList,displayedList)
+            assertEquals(Example.exampleItemList,displayedList)
 
         }
     }
