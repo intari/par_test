@@ -106,6 +106,13 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
+    // Robolectric support
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+        }
+    }
 }
 
 dependencies {
@@ -125,8 +132,8 @@ dependencies {
 
     implementation 'com.google.code.gson:gson:2.6.1'
 
-    // Retrofit
-    implementation(["com.squareup.okhttp3:okhttp:$retrofit_version",
+    // Retrofit and OkHttp
+    implementation(["com.squareup.okhttp3:okhttp:$okhttp_version",
                     "com.squareup.retrofit2:adapter-rxjava2:$retrofit_version",
                     "com.squareup.retrofit2:converter-gson:$retrofit_version",
                     "com.squareup.okhttp3:logging-interceptor:$okhttp_version"
@@ -164,4 +171,5 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.1'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
+    testImplementation "org.robolectric:robolectric:3.6.1"
 }
