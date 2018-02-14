@@ -2,10 +2,11 @@ package com.viorsan.resultanttestdkzm
 
 import android.content.Intent
 import android.os.Build.VERSION_CODES.*
-import com.viorsan.resultanttestdkzm.view.main.MainActivity
-import junit.framework.Assert.assertNotNull
+import com.viorsan.resultanttestdkzm.R.id.recyclerView
 import org.hamcrest.CoreMatchers.equalTo
 import org.hamcrest.MatcherAssert.assertThat
+import org.junit.After
+import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -17,6 +18,11 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.Config.ALL_SDKS
 import org.robolectric.shadows.ShadowActivity
 import org.robolectric.shadows.ShadowIntent
+import org.robolectric.android.controller.ActivityController
+import com.viorsan.resultanttestdkzm.view.main.MainActivity
+import android.os.Bundle
+import org.robolectric.RuntimeEnvironment
+
 
 /**
  * Created by Dmitriy Kazimirov, e-mail:dmitriy.kazimirov@viorsan.com on 14.02.2018.
@@ -34,49 +40,127 @@ import org.robolectric.shadows.ShadowIntent
 @RunWith(RobolectricTestRunner::class)
 @Config(constants=BuildConfig::class,
         packageName = "com.viorsan.resultanttestdkzm",
-        sdk = intArrayOf(ALL_SDKS)
-        //sdk= intArrayOf( LOLLIPOP,M,N, O)
+        //sdk = intArrayOf(ALL_SDKS)
+        sdk= intArrayOf( LOLLIPOP,M,N, O)
         )
 class SimpleRobolectricTest {
-    lateinit var mainActivity:MainActivity
+    private lateinit var controller: ActivityController<MainActivity>
 
     @Before
     fun init(){
-        mainActivity =  Robolectric.buildActivity(MainActivity::class.java)
+        controller =  Robolectric.buildActivity(MainActivity::class.java)
+
+    }
+
+    @After
+    fun teardown() {
+        // Destroy activity after every test
+        controller
+                .pause()
+                .start()
+                .destroy()
+    }
+    fun createActivity() = controller
                 .create()
                 .start()
                 .resume()
                 .visible() //see http://robolectric.org/activity-lifecycle/
-                .get();
-
-    }
+                .get()
 
     @Test
     fun `AboutUs activity Can be launched directly`() {
 
-        val shadowActivity: ShadowActivity = Shadows.shadowOf(mainActivity)
-        mainActivity.launchAboutUs()
+        val activity= createActivity()
+        val shadowActivity: ShadowActivity = Shadows.shadowOf(activity)
+        activity.launchAboutUs()
         val intent: Intent =shadowActivity.nextStartedActivity
         val shadowIntent: ShadowIntent =shadowOf(intent)
-        assertThat(shadowIntent.intentClass.name, equalTo(AboutUsActivity::class.java!!.getName()))
+        //very simple resolution
+        //this code only check intent class and not other things
+        //see other tests for how to do this correctly
+        assertThat(shadowIntent.intentClass.name, equalTo(AboutUsActivity::class.java.getName()))
     }
 
     @Test
     fun `Options menu of MainActivity is correctly initialized`() {
-
-        val shadowActivity: ShadowActivity = Shadows.shadowOf(mainActivity)
-        val menu = shadowActivity.optionsMenu
-        assertNotNull(menu)
-        val aboutItem = menu.findItem(R.id.action_about)
-        assert(aboutItem.title.equals(mainActivity.getText(R.string.action_about)))
-
+        val activity= createActivity()
+        validateActivity(activity)
     }
 
     @Test
     fun `AboutUs activity can be launched by selecting from Options Menu`() {
-        val shadowActivity: ShadowActivity = Shadows.shadowOf(mainActivity)
+        val activity= createActivity()
+        val shadowActivity: ShadowActivity = Shadows.shadowOf(activity)
         shadowActivity.clickMenuItem(R.id.action_about)
-        val expectedIntent = Intent(mainActivity, AboutUsActivity::class.java)
-        assert(shadowOf(mainActivity).nextStartedActivity.equals(expectedIntent))
+        val expectedIntent = Intent(activity, AboutUsActivity::class.java)
+        val actual=shadowOf(activity).nextStartedActivity
+
+        // Determine if two intents are the same for the purposes of intent resolution (filtering).
+        // That is, if their action, data, type, class, and categories are the same. This does
+        // not compare any extra data included in the intents
+        assertThat("Expected intent:${expectedIntent}, actualIntent:${actual}",actual.filterEquals(expectedIntent))
     }
+
+    @Test
+    fun `Simulate phone call - pause-and-resume`() {
+        val activity= createActivity()
+        controller.pause().resume()
+
+        validateActivity(activity)
+    }
+
+    @Test
+    fun `Simululate activity re-creation`() {
+        val bundle = Bundle()
+
+        val initialActivity=createActivity()
+        validateActivity(initialActivity)
+
+        // Destroy the original activity
+        controller
+                .saveInstanceState(bundle)
+                .pause()
+                .stop()
+                .destroy()
+
+        // Bring up a new activity
+        controller = Robolectric.buildActivity(MainActivity::class.java)
+                .create(bundle)
+                .start()
+                .restoreInstanceState(bundle)
+                .resume()
+                .visible()
+        val activity = controller.get()
+
+        validateActivity(activity)
+    }
+
+    @Test
+    @Config(qualifiers = "+port")
+    fun `Simulate rotation`() {
+
+        val activity= createActivity()
+        validateActivity(activity)
+        RuntimeEnvironment.setQualifiers("+land");
+        controller.configurationChange();
+        validateActivity(activity)
+
+
+
+    }
+    fun validateActivity( activity:MainActivity) {
+        //confirm options menu is correct
+        val shadowActivity: ShadowActivity = Shadows.shadowOf(activity)
+        val menu = shadowActivity.optionsMenu
+        assertNotNull(menu)
+        val aboutItem = menu.findItem(R.id.action_about)
+        val expectedTitle=activity.getText(R.string.action_about)
+        assertThat("Title from resources ${expectedTitle} equal real title ${aboutItem.title}",expectedTitle.equals(aboutItem.title))
+
+        //check recyclerview is here
+        val recyclerView=shadowActivity.findViewById(recyclerView)
+        assertNotNull("main list still here",recyclerView)
+
+    }
+
 }
